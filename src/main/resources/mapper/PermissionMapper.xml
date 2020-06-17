@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo.rbacDemo.mapper.PermissionMapper">
+
+    <select id="listPermissionByRoleId" resultType="com.demo.rbacDemo.entity.Permission">
+
+        SELECT
+        distinct p.*
+        FROM
+        iw_role_permission rp
+        LEFT JOIN iw_permission p ON rp.permission_id = p.id
+        WHERE
+        rp.role_id IN
+        <foreach collection="list" item="id" index="index" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+
+    </select>
+    <select id="listPermissionByUserId" resultType="com.demo.rbacDemo.entity.Permission">
+
+          SELECT
+                DISTINCT p.*
+            FROM
+                iw_user u
+                LEFT JOIN iw_user_role ur ON u.id = ur.user_id
+                LEFT JOIN iw_role_permission rp ON ur.role_id = rp.role_id
+                LEFT JOIN iw_permission p ON rp.permission_id = p.id
+                WHERE u.id = #{userId}
+
+    </select>
+
+    <!--列表资源 递归查询菜单资源-start-->
+    <resultMap type="com.demo.rbacDemo.vo.PermissionTree" id="permissionMap">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="icon" property="icon"/>
+        <result column="url" property="url"/>
+        <result column="type" property="type"/>
+        <result column="permission" property="permission"/>
+        <result column="method" property="method"/>
+        <result column="sort" property="sort"/>
+        <result column="parent_id" property="parentId"/>
+        <!--        <result column="parent_title" property="parentTitle"/>-->
+        <collection property="children" ofType="com.demo.rbacDemo.vo.PermissionTree" column="{id = id}" select="findPermissionByPid"/>
+    </resultMap>
+
+    <select id="listPermission" resultType="com.demo.rbacDemo.vo.PermissionTree">
+
+        SELECT
+            p.id,
+            p.`name`,
+            p.icon,
+            p.url,
+            p.type,
+            p.permission,
+            p.method,
+            p.sort,
+            p.parent_id
+        FROM
+            iw_permission p
+        WHERE
+            p.parent_id = 0
+              ORDER BY p.sort ASC
+
+    </select>
+    <select id="findPermissionByPid" resultMap="permissionMap" parameterType="java.util.Map">
+
+         SELECT
+       p.id,
+            p.`name`,
+            p.icon,
+            p.url,
+            p.type,
+            p.permission,
+            p.method,
+            p.sort,
+            p.parent_id
+        FROM iw_permission p
+        WHERE p.parent_id = #{id}
+        ORDER BY p.sort ASC
+
+    </select>
+</mapper>
